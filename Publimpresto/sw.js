@@ -1,4 +1,4 @@
-const CACHE_NAME = 'easyscreen-v1.0';
+const CACHE_NAME = 'Publimpresto-v1.0';
 const urlsToCache = [
   '/',
   '/index.html',
