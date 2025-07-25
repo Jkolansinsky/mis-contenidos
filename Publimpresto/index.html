@@ -7,41 +7,42 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#000000">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      background: #000;
-      height: 100vh;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-    }
-    
-    #media-container {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    
-    .media-item {
-  width: 100%;
-  max-height: 100vh;
-  object-fit: cover; /* o 'contain' si prefieres que no se recorte */
-  display: block;
+   * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-    
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
+body {
+  background: #000;
+  height: 100vh;
+  overflow: hidden;
+  font-family: Arial, sans-serif;
+}
+
+#media-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.media-item {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* ¡ESTA ES LA CLAVE! */
+  object-position: center; /* Centra el contenido */
+}
+
+/* Para videos específicamente */
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
     
     #loading {
       color: white;
