@@ -31,7 +31,7 @@
       position: relative; /* Para que los elementos absolutos se posicionen respecto a este */
     }
     /* Fondos para diferentes condiciones climáticas en el flash */
-    
+     
    .flash-bg.clear-sky {
   background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
               url('https://github.com/Jkolansinsky/mis-contenidos/blob/main/Publimpresto/imgClima/despejado.jpg?raw=true') center/cover no-repeat;
@@ -70,7 +70,6 @@
     .flash-bg.default {
       background: linear-gradient(135deg, #1a2a6c, #2c3e50); /* Fondo por defecto original */
     }
-
     .media-item {
       max-width: 100%;
       max-height: 100%;
@@ -191,10 +190,49 @@
       color: white;
       font-size: 1.5em;
     }
+    
+    /* Estilos para el botón de inicio */
+    #start-button-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 1000;
+    }
+    
+    #start-button {
+      padding: 20px 40px;
+      font-size: 2em;
+      background: linear-gradient(45deg, #2c3e50, #3498db);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 0 20px rgba(52, 152, 219, 0.5);
+      transition: all 0.3s ease;
+    }
+    
+    #start-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(52, 152, 219, 0.8);
+    }
+    
+    #start-button:active {
+      transform: scale(0.95);
+    }
   </style>
 </head>
 <body>
   <div id="media-container">
+    <div id="start-button-container">
+      <button id="start-button">Iniciar Presentación</button>
+    </div>
     <div id="loading">Cargando contenido...</div>
     <!-- Flash informativo -->
     <div id="info-flash">
@@ -279,6 +317,9 @@
     const flashWeatherIcon = document.getElementById('flash-weather-icon');
     const flashWeatherDesc = document.getElementById('flash-weather-desc');
     const flashWind = document.getElementById('flash-wind');
+    const startButtonContainer = document.getElementById('start-button-container');
+    const startButton = document.getElementById('start-button');
+    
     let mediaFiles = [];
     let currentIndex = 0;
     let mostrarFlash = false;
@@ -286,7 +327,7 @@
     
     // Variables para controlar el intervalo de imágenes
     let mediaInterval = null;
-    let nextMediaTimeout = null;
+    let flashInterval = null;
     
     // Avisos para la cinta
     const avisos = [
@@ -304,6 +345,7 @@
       "ENMICADOS",
       "PAPELERIA"
     ];
+    
     // Registrar Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -312,6 +354,7 @@
           .catch(err => console.log('SW error:', err));
       });
     }
+    
     // Crear cinta de avisos
     function createTicker() {
       tickerContent.innerHTML = '';
@@ -325,6 +368,7 @@
         });
       }
     }
+    
     // Actualizar hora en tiempo real para el flash
     function updateFlashClock() {
       const ahora = new Date();
@@ -343,6 +387,7 @@
       flashTime.textContent = hora;
       flashDate.textContent = fecha;
     }
+    
     // Obtener clima usando Open-Meteo
     async function obtenerClima(ciudad) {
       try {
@@ -386,6 +431,7 @@
         return false;
       }
     }
+    
     // Mostrar flash informativo para una ciudad específica
     async function mostrarFlashCiudad(index) {
       return new Promise(async (resolve) => {
@@ -406,13 +452,6 @@
         clearInterval(mediaInterval);
         mediaInterval = null;
         console.log("Intervalo de imágenes pausado");
-      }
-      
-      // Cancelar cualquier timeout pendiente de nextMedia
-      if (nextMediaTimeout) {
-        clearTimeout(nextMediaTimeout);
-        nextMediaTimeout = null;
-        console.log("Timeout de nextMedia cancelado");
       }
       
       // Ocultar contenido multimedia
@@ -471,9 +510,16 @@
         video.src = file;
         video.autoplay = true;
         video.loop = true;
-        video.muted = false;
+        // video.muted = true; // Eliminamos muted para que tenga audio
         video.className = 'media-item';
+        video.controls = false; // Ocultar controles
         container.appendChild(video);
+        
+        // Intentar reproducir el video con audio
+        video.play().catch(error => {
+          console.log("No se pudo reproducir el video con audio:", error);
+          // Si falla, mostrar mensaje en consola pero continuar
+        });
       }
     }
     
@@ -500,9 +546,8 @@
           })
           .map(file => file.download_url);
         if (mediaFiles.length > 0) {
-          showMedia();
-          // Iniciar el intervalo de imágenes
-          mediaInterval = setInterval(nextMedia, 10000);
+          // No iniciamos el intervalo aquí, se iniciará al presionar el botón
+          console.log("Archivos cargados. Esperando botón de inicio.");
         } else {
           container.innerHTML = '<div id="loading">No hay archivos multimedia en la carpeta</div>';
         }
@@ -516,22 +561,41 @@
       }
     }
     
+    // Función para iniciar la presentación
+    function iniciarPresentacion() {
+      // Ocultar el botón de inicio
+      startButtonContainer.style.display = 'none';
+      
+      // Mostrar el primer contenido
+      showMedia();
+      
+      // Iniciar el intervalo de imágenes
+      mediaInterval = setInterval(nextMedia, 10000);
+      
+      // Iniciar el intervalo del flash informativo (cada 15 minutos)
+      flashInterval = setInterval(() => {
+        mostrarFlashInformativo();
+      }, 900000); // 15 minutos
+      
+      // Mostrar flash informativo inmediatamente
+      setTimeout(() => {
+        mostrarFlashInformativo();
+      }, 3000); // Mostrar después de 3 segundos de carga
+      
+      // Actualizar reloj del flash cada segundo cuando está visible
+      setInterval(updateFlashClock, 1000);
+      
+      console.log("Presentación iniciada");
+    }
+    
+    // Evento para el botón de inicio
+    startButton.addEventListener('click', iniciarPresentacion);
+    
     // Iniciar cuando la página cargue
     window.addEventListener('load', () => {
       createTicker();
       fetchMediaFiles();
-      // Mostrar flash informativo cada 5 minutos (300000 ms)
-      setInterval(() => {
-        mostrarFlashInformativo();
-      }, 300000); // 5 minutos
-      // También mostrar el flash inmediatamente al cargar
-      setTimeout(() => {
-        mostrarFlashInformativo();
-      }, 3000); // Mostrar después de 3 segundos de carga
-      // Actualizar reloj del flash cada segundo cuando está visible
-      setInterval(updateFlashClock, 1000);
     });
   </script>
 </body>
 </html>
-
