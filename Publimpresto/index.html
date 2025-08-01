@@ -3,72 +3,307 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Publimpresto Screen Auto</title>
+  <title>EasyScreen con Flash Informativo</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#000000">
   <style>
-      * {
+    * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
     body {
       background: #000;
       height: 100vh;
       overflow: hidden;
       font-family: Arial, sans-serif;
+      padding: 20px;
     }
-    
     #media-container {
       width: 100%;
-      height: 100%;
+      height: calc(100vh - 100px); /* Ajustar si se modifica la cinta */
       display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #111;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative; /* Para que los elementos absolutos se posicionen respecto a este */
+    }
+    /* Fondos para diferentes condiciones climáticas en el flash */
+    
+    .flash-bg.clear-sky {
+  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+              url('https://github.com/Jkolansinsky/mis-contenidos/blob/main/Publimpresto/imgClima/despejado.jpg') center/cover no-repeat;
+}
+    
+    .flash-bg.partly-cloudy {
+      background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), 
+              url('https://github.com/Jkolansinsky/mis-contenidos/blob/main/Publimpresto/imgClima/Parcialmente%20nublado.jpg') center/cover no-repeat;
+    }
+    
+    .flash-bg.cloudy, .flash-bg.overcast {
+      background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+              url('https://github.com/Jkolansinsky/mis-contenidos/blob/main/Publimpresto/imgClima/nublado.jpg') center/cover no-repeat;
+    }
+    
+    .flash-bg.rain, .flash-bg.drizzle {
+      background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+              url('https://github.com/Jkolansinsky/mis-contenidos/blob/main/Publimpresto/imgClima/lluvia.jpg') center/cover no-repeat;
+    }
+    
+    .flash-bg.snow, .flash-bg.sleet {
+      background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+              url('https://github.com/Jkolansinsky/mis-contenidos/blob/main/Publimpresto/imgClima/nieve.jpg') center/cover no-repeat; /* Misma imagen que lluvia para ejemplo */
+    }
+    
+    .flash-bg.thunderstorm {
+      background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+              url('https://github.com/Jkolansinsky/mis-contenidos/blob/main/Publimpresto/imgClima/tormenta.jpg') center/cover no-repeat; /* Misma imagen que despejado para ejemplo */
+    }
+    
+    .flash-bg.fog {
+      background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+              url('https://github.com/Jkolansinsky/mis-contenidos/blob/main/Publimpresto/imgClima/niebla.jpg') center/cover no-repeat;
+    }
+    
+    .flash-bg.default {
+      background: linear-gradient(135deg, #1a2a6c, #2c3e50); /* Fondo por defecto original */
+    }
+
+    .media-item {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      width: auto;
+      height: auto;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    video {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      width: auto;
+      height: auto;
+    }
+    /* Estilos para el flash informativo */
+    #info-flash {
+      display: none; /* Inicialmente oculto */
+      width: 100%;
+      height: 100%;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-    }
-    
-    .media-item {
-  width: 100%;
-  max-height: 100vh;
-  object-fit: cover; /* o 'contain' si prefieres que no se recorte */
-  display: block;
-}
-
-    
-    video {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
-    
-    #loading {
       color: white;
-      font-size: 1.2em;
-    }
-    
-    #error {
-      color: #ff6b6b;
       text-align: center;
       padding: 20px;
+      /* background: linear-gradient(135deg, #1a2a6c, #2c3e50); El fondo ahora es dinámico */
+      position: relative; /* Para contener elementos absolutos si fuera necesario */
+    }
+    .flash-time {
+      font-size: 5em; /* Muy grande para visibilidad */
+      font-weight: bold;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    .flash-date {
+      font-size: 2em;
+      margin-bottom: 30px;
+      opacity: 0.9;
+    }
+    .flash-weather {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 1.8em;
+    }
+    .flash-city {
+      font-size: 1.5em;
+      color: #ffcc00;
+      margin-bottom: 15px;
+    }
+    .flash-temp {
+      font-size: 2em;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+    .flash-weather-icon {
+      font-size: 3em;
+      margin: 15px 0;
+    }
+    .flash-weather-desc {
+      font-size: 1.2em;
+      margin: 10px 0;
+      text-transform: capitalize;
+    }
+    .flash-wind {
+      font-size: 1em;
+      opacity: 0.8;
+    }
+    /* Cinta de avisos (mantenida) */
+    #bottom-container {
+      height: 90px;
+      background: #000;
+      border-top: 2px solid #333;
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 0 20px;
+    }
+    #ticker-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      background: rgba(0,0,0,0.5);
+      border-radius: 8px;
+    }
+    #ticker-content {
+      display: flex;
+      animation: ticker-animation 80s linear infinite;
+      white-space: nowrap;
+      padding: 0 20px;
+    }
+    .ticker-item {
+      color: white;
+      font-size: 42px;
+      font-weight: bold;
+      margin-right: 50px;
+      display: flex;
+      align-items: center;
+    }
+    .ticker-item::before {
+      content: "★";
+      margin-right: 10px;
+      color: #ffcc00;
+    }
+    @keyframes ticker-animation {
+      0% {
+        transform: translateX(100%);
+      }
+      100% {
+        transform: translateX(-100%);
+      }
+    }
+    #loading {
+      color: white;
+      font-size: 1.5em;
     }
   </style>
 </head>
 <body>
   <div id="media-container">
     <div id="loading">Cargando contenido...</div>
+    <!-- Flash informativo -->
+    <div id="info-flash">
+      <div class="flash-time" id="flash-time">00:00:00</div>
+      <div class="flash-date" id="flash-date">Cargando fecha...</div>
+      <div class="flash-weather">
+        <div class="flash-city" id="flash-city">Cargando ciudad...</div>
+        <div class="flash-weather-icon" id="flash-weather-icon">🌡️</div>
+        <div class="flash-temp" id="flash-temp">--°C</div>
+        <div class="flash-weather-desc" id="flash-weather-desc">Cargando clima...</div>
+        <div class="flash-wind" id="flash-wind">Viento: -- km/h</div>
+      </div>
+    </div>
   </div>
-  
+  <!-- Cinta de avisos -->
+  <div id="bottom-container">
+    <div id="ticker-container">
+      <div id="ticker-content"></div>
+    </div>
+  </div>
   <script>
     // Configuración - CAMBIA ESTOS VALORES
-    const GITHUB_USER = 'Jkolansinsky'; // Tu usuario de GitHub
-    const REPO_NAME = 'mis-contenidos'; // Nombre de tu repositorio
-    
+    const GITHUB_USER = 'Jkolansinsky';
+    const REPO_NAME = 'mis-contenidos';
+    // Mapa de códigos de clima con clase de fondo
+    const weatherMap = {
+      0: { desc: "Despejado", icon: "☀️", bgClass: "clear-sky" },
+      1: { desc: "Parcialmente nublado", icon: "⛅", bgClass: "partly-cloudy" },
+      2: { desc: "Nublado", icon: "☁️", bgClass: "cloudy" },
+      3: { desc: "Cubierto", icon: "☁️", bgClass: "overcast" },
+      45: { desc: "Niebla", icon: "🌫️", bgClass: "fog" },
+      48: { desc: "Niebla helada", icon: "🌫️", bgClass: "fog" },
+      51: { desc: "Llovizna ligera", icon: "🌦️", bgClass: "drizzle" },
+      53: { desc: "Llovizna", icon: "🌦️", bgClass: "drizzle" },
+      55: { desc: "Llovizna intensa", icon: "🌦️", bgClass: "drizzle" },
+      56: { desc: "Llovizna helada ligera", icon: "🌧️", bgClass: "sleet" },
+      57: { desc: "Llovizna helada", icon: "🌧️", bgClass: "sleet" },
+      61: { desc: "Lluvia ligera", icon: "🌧️", bgClass: "rain" },
+      63: { desc: "Lluvia", icon: "🌧️", bgClass: "rain" },
+      65: { desc: "Lluvia intensa", icon: "🌧️", bgClass: "rain" },
+      66: { desc: "Lluvia helada ligera", icon: "🌧️", bgClass: "sleet" },
+      67: { desc: "Lluvia helada", icon: "🌧️", bgClass: "sleet" },
+      71: { desc: "Nieve ligera", icon: "❄️", bgClass: "snow" },
+      73: { desc: "Nieve", icon: "❄️", bgClass: "snow" },
+      75: { desc: "Nieve intensa", icon: "❄️", bgClass: "snow" },
+      77: { desc: "Granizos", icon: "❄️", bgClass: "snow" },
+      80: { desc: "Chubascos ligeros", icon: "🌦️", bgClass: "rain" },
+      81: { desc: "Chubascos", icon: "🌧️", bgClass: "rain" },
+      82: { desc: "Chubascos intensos", icon: "🌧️", bgClass: "rain" },
+      85: { desc: "Nevadas ligeras", icon: "❄️", bgClass: "snow" },
+      86: { desc: "Nevadas", icon: "❄️", bgClass: "snow" },
+      95: { desc: "Tormenta", icon: "⛈️", bgClass: "thunderstorm" },
+      96: { desc: "Tormenta con granizo", icon: "⛈️", bgClass: "thunderstorm" },
+      99: { desc: "Tormenta intensa", icon: "⛈️", bgClass: "thunderstorm" }
+    };
+    // Ciudades mexicanas con coordenadas (usaremos la primera para el flash)
+    const ciudades = [
+      {
+        nombre: "Villahermosa",
+        lat: 17.99,
+        lon: -92.93
+      },      
+      {
+        nombre: "Ciudad del Carmen",
+        lat: 18.63,
+        lon: -91.83
+      },
+      {
+        nombre: "Mérida",
+        lat: 20.97,
+        lon: -89.59
+      }
+    ];
     const container = document.getElementById('media-container');
+    const tickerContent = document.getElementById('ticker-content');
+    const loadingDiv = document.getElementById('loading');
+    const infoFlash = document.getElementById('info-flash');
+    const flashTime = document.getElementById('flash-time');
+    const flashDate = document.getElementById('flash-date');
+    const flashCity = document.getElementById('flash-city');
+    const flashTemp = document.getElementById('flash-temp');
+    const flashWeatherIcon = document.getElementById('flash-weather-icon');
+    const flashWeatherDesc = document.getElementById('flash-weather-desc');
+    const flashWind = document.getElementById('flash-wind');
     let mediaFiles = [];
     let currentIndex = 0;
+    let mostrarFlash = false;
+    let ciudadActual = 0;
     
+    // Variables para controlar el intervalo de imágenes
+    let mediaInterval = null;
+    let nextMediaTimeout = null;
+    
+    // Avisos para la cinta
+    const avisos = [
+      "COPIAS",
+      "IMPRESIONES", 
+      "PLOTTEO",
+      "ESCANEOS",
+      "ENGARGOLADO",
+      "ENCUADERNACION",
+      "DISEÑO GRÁFICO",
+      "FOTOCOPIAS A COLOR",
+      "LONAS",
+      "IMPRESION EN VINIL",
+      "IMPRESION DE ETIQUETAS",
+      "ENMICADOS",
+      "PAPELERIA"
+    ];
     // Registrar Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -77,58 +312,159 @@
           .catch(err => console.log('SW error:', err));
       });
     }
-    
-    // Obtener lista de archivos del repositorio
-    async function fetchMediaFiles() {
-      try {
-        const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents`);
-        const files = await response.json();
-        
-        if (files.message) {
-          throw new Error(files.message);
-        }
-        
-        // Filtrar solo imágenes y videos
-        mediaFiles = files
-          .filter(file => {
-            const ext = file.name.split('.').pop().toLowerCase();
-            return ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm', 'mov'].includes(ext);
-          })
-          .map(file => file.download_url);
-        
-        if (mediaFiles.length > 0) {
-          showMedia();
-          // Cambiar automáticamente cada 10 segundos
-          setInterval(nextMedia, 10000);
-        } else {
-          container.innerHTML = '<div id="loading">No hay archivos multimedia en la carpeta</div>';
-        }
-      } catch (error) {
-        container.innerHTML = `
-          <div id="error">
-            <h3>Error al cargar contenido</h3>
-            <p>Verifica que:</p>
-            <p>• Usuario de GitHub: ${GITHUB_USER}</p>
-            <p>• Repositorio: ${REPO_NAME}</p>
-            <p>• GitHub Pages esté activado</p>
-            <p>• Hayan archivos multimedia</p>
-          </div>
-        `;
-        console.error('Error:', error);
+    // Crear cinta de avisos
+    function createTicker() {
+      tickerContent.innerHTML = '';
+      // Crear elementos duplicados para animación infinita
+      for (let i = 0; i < 2; i++) {
+        avisos.forEach(aviso => {
+          const item = document.createElement('div');
+          item.className = 'ticker-item';
+          item.textContent = aviso;
+          tickerContent.appendChild(item);
+        });
       }
     }
+    // Actualizar hora en tiempo real para el flash
+    function updateFlashClock() {
+      const ahora = new Date();
+      const hora = ahora.toLocaleTimeString('es-MX', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+      const fecha = ahora.toLocaleDateString('es-MX', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+      flashTime.textContent = hora;
+      flashDate.textContent = fecha;
+    }
+    // Obtener clima usando Open-Meteo
+    async function obtenerClima(ciudad) {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${ciudad.lat}&longitude=${ciudad.lon}&current=temperature_2m,wind_speed_10m,weather_code`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.current) {
+          const temp = data.current.temperature_2m;
+          const wind = data.current.wind_speed_10m;
+          const code = data.current.weather_code;
+          const weather = weatherMap[code] || { desc: "Desconocido", icon: "🌡️", bgClass: "default" };
+          
+          flashCity.textContent = ciudad.nombre;
+          flashTemp.textContent = `${temp}°C`;
+          flashWeatherDesc.textContent = weather.desc;
+          flashWeatherIcon.textContent = weather.icon;
+          flashWind.textContent = `Viento: ${wind} km/h`;
+          
+          // Aplicar el fondo correspondiente al clima
+          // Primero, eliminar cualquier clase de fondo anterior
+          infoFlash.className = infoFlash.className.replace(/flash-bg\s\S+/g, '').trim();
+          // Agregar la nueva clase de fondo
+          infoFlash.classList.add('flash-bg', weather.bgClass);
+          
+          return true;
+        } else {
+          throw new Error('Datos no disponibles');
+        }
+      } catch (error) {
+        console.error('Error al obtener clima:', error);
+        flashCity.textContent = ciudad.nombre;
+        flashTemp.textContent = "--°C";
+        flashWeatherDesc.textContent = "Error al cargar";
+        flashWeatherIcon.textContent = "🌡️";
+        flashWind.textContent = "Viento: -- km/h";
+        
+        // En caso de error, aplicar fondo por defecto
+        infoFlash.className = infoFlash.className.replace(/flash-bg\s\S+/g, '').trim();
+        infoFlash.classList.add('flash-bg', 'default');
+        
+        return false;
+      }
+    }
+    // Mostrar flash informativo para una ciudad específica
+    async function mostrarFlashCiudad(index) {
+      return new Promise(async (resolve) => {
+        // Actualizar hora
+        updateFlashClock();
+        // Obtener y mostrar clima para la ciudad específica
+        await obtenerClima(ciudades[index]);
+        resolve();
+      });
+    }
     
+    // Mostrar flash informativo con todas las ciudades
+    async function mostrarFlashInformativo() {
+      console.log("Iniciando flash informativo");
+      
+      // Pausar el intervalo de imágenes
+      if (mediaInterval) {
+        clearInterval(mediaInterval);
+        mediaInterval = null;
+        console.log("Intervalo de imágenes pausado");
+      }
+      
+      // Cancelar cualquier timeout pendiente de nextMedia
+      if (nextMediaTimeout) {
+        clearTimeout(nextMediaTimeout);
+        nextMediaTimeout = null;
+        console.log("Timeout de nextMedia cancelado");
+      }
+      
+      // Ocultar contenido multimedia
+      container.innerHTML = '';
+      container.appendChild(infoFlash);
+      infoFlash.style.display = 'flex';
+      
+      // Duración por ciudad: 7 segundos
+      const tiempoPorCiudad = 7000;
+      const numCiudades = ciudades.length;
+      const tiempoTotal = numCiudades * tiempoPorCiudad;
+      
+      console.log(`Mostrando ${numCiudades} ciudades por ${tiempoPorCiudad/1000} segundos cada una. Tiempo total: ${tiempoTotal/1000} segundos`);
+      
+      // Mostrar cada ciudad secuencialmente
+      for (let i = 0; i < ciudades.length; i++) {
+        console.log(`Mostrando ciudad ${i + 1}: ${ciudades[i].nombre}`);
+        await mostrarFlashCiudad(i);
+        
+        // Esperar el tiempo asignado para esta ciudad, a menos que sea la última
+        if (i < ciudades.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, tiempoPorCiudad));
+        }
+      }
+      
+      // Mantener la última ciudad visible por el tiempo restante
+      console.log("Manteniendo última ciudad visible");
+      await new Promise(resolve => setTimeout(resolve, tiempoPorCiudad));
+      
+      // Volver al contenido multimedia
+      console.log("Finalizando flash informativo y volviendo al contenido multimedia");
+      infoFlash.style.display = 'none';
+      showMedia();
+      
+      // Reanudar el intervalo de imágenes
+      console.log("Reanudando intervalo de imágenes");
+      mediaInterval = setInterval(nextMedia, 10000);
+    }
+    
+    // Mostrar contenido multimedia
     function showMedia() {
       container.innerHTML = '';
+      if (mediaFiles.length === 0) {
+        container.innerHTML = '<div id="loading">No hay archivos multimedia</div>';
+        return;
+      }
       const file = mediaFiles[currentIndex];
       const ext = file.split('.').pop().toLowerCase();
-      
       if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) {
         const img = document.createElement('img');
         img.src = file;
         img.className = 'media-item';
-        img.onload = () => console.log('Imagen cargada');
-        img.onerror = () => console.log('Error al cargar imagen');
         container.appendChild(img);
       } else if (['mp4', 'webm', 'mov'].includes(ext)) {
         const video = document.createElement('video');
@@ -137,8 +473,6 @@
         video.loop = true;
         video.muted = true;
         video.className = 'media-item';
-        video.onloadeddata = () => console.log('Video cargado');
-        video.onerror = () => console.log('Error al cargar video');
         container.appendChild(video);
       }
     }
@@ -150,13 +484,53 @@
       }
     }
     
+    // Obtener lista de archivos del repositorio
+    async function fetchMediaFiles() {
+      try {
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/contents`);
+        const files = await response.json();
+        if (files.message) {
+          throw new Error(files.message);
+        }
+        // Filtrar solo imágenes y videos
+        mediaFiles = files
+          .filter(file => {
+            const ext = file.name.split('.').pop().toLowerCase();
+            return ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm', 'mov'].includes(ext);
+          })
+          .map(file => file.download_url);
+        if (mediaFiles.length > 0) {
+          showMedia();
+          // Iniciar el intervalo de imágenes
+          mediaInterval = setInterval(nextMedia, 10000);
+        } else {
+          container.innerHTML = '<div id="loading">No hay archivos multimedia en la carpeta</div>';
+        }
+      } catch (error) {
+        container.innerHTML = `
+          <div id="loading" style="color:#ff6b6b">
+            Error: Verifica configuración de GitHub
+          </div>
+        `;
+        console.error('Error:', error);
+      }
+    }
+    
     // Iniciar cuando la página cargue
-    window.addEventListener('load', fetchMediaFiles);
+    window.addEventListener('load', () => {
+      createTicker();
+      fetchMediaFiles();
+      // Mostrar flash informativo cada 5 minutos (300000 ms)
+      setInterval(() => {
+        mostrarFlashInformativo();
+      }, 300000); // 5 minutos
+      // También mostrar el flash inmediatamente al cargar
+      setTimeout(() => {
+        mostrarFlashInformativo();
+      }, 3000); // Mostrar después de 3 segundos de carga
+      // Actualizar reloj del flash cada segundo cuando está visible
+      setInterval(updateFlashClock, 1000);
+    });
   </script>
 </body>
 </html>
-
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-<link rel="manifest" href="/site.webmanifest">
